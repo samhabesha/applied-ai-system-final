@@ -1,5 +1,15 @@
-from typing import List, Dict, Tuple, Optional
-from dataclasses import dataclass
+import csv
+from typing import List, Dict, Tuple
+from dataclasses import dataclass, asdict
+
+# Algorithm Recipe weights (see README "How The System Works")
+GENRE_POINTS = 2.0
+MOOD_POINTS = 1.0
+ENERGY_POINTS = 1.5
+ACOUSTIC_POINTS = 0.5
+
+NUMERIC_FIELDS = {"energy", "tempo_bpm", "valence", "danceability", "acousticness"}
+
 
 @dataclass
 class Song:
@@ -18,6 +28,7 @@ class Song:
     danceability: float
     acousticness: float
 
+
 @dataclass
 class UserProfile:
     """
@@ -29,6 +40,12 @@ class UserProfile:
     target_energy: float
     likes_acoustic: bool
 
+    def to_prefs(self) -> Dict:
+        """Convert the profile to the dictionary format score_song() expects."""
+        return {"genre": self.favorite_genre, "mood": self.favorite_mood,
+                "energy": self.target_energy, "likes_acoustic": self.likes_acoustic}
+
+
 class Recommender:
     """
     OOP implementation of the recommendation logic.
@@ -38,36 +55,65 @@ class Recommender:
         self.songs = songs
 
     def recommend(self, user: UserProfile, k: int = 5) -> List[Song]:
-        # TODO: Implement recommendation logic
-        return self.songs[:k]
+        """Return the k songs with the highest score for this user."""
+        prefs = user.to_prefs()
+        ranked = sorted(self.songs, key=lambda s: score_song(prefs, asdict(s))[0], reverse=True)
+        return ranked[:k]
 
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
-        # TODO: Implement explanation logic
-        return "Explanation placeholder"
+        """Explain in plain words why this song scored the way it did."""
+        score, reasons = score_song(user.to_prefs(), asdict(song))
+        return f"Score {score:.2f}: " + "; ".join(reasons)
+
 
 def load_songs(csv_path: str) -> List[Dict]:
     """
     Loads songs from a CSV file.
     Required by src/main.py
     """
-    # TODO: Implement CSV loading logic
-    print(f"Loading songs from {csv_path}...")
-    return []
+    songs = []
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            row["id"] = int(row["id"])
+            for field in NUMERIC_FIELDS:
+                row[field] = float(row[field])
+            songs.append(row)
+    print(f"Loaded songs: {len(songs)}")
+    return songs
+
 
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """
     Scores a single song against user preferences.
     Required by recommend_songs() and src/main.py
     """
-    # TODO: Implement scoring logic using your Algorithm Recipe from Phase 2.
-    # Expected return format: (score, reasons)
-    return []
+    score, reasons = 0.0, []
+    if song["genre"].lower() == str(user_prefs.get("genre", "")).lower():
+        score += GENRE_POINTS
+        reasons.append(f"genre match: {song['genre']} (+{GENRE_POINTS:.1f})")
+    if song["mood"].lower() == str(user_prefs.get("mood", "")).lower():
+        score += MOOD_POINTS
+        reasons.append(f"mood match: {song['mood']} (+{MOOD_POINTS:.1f})")
+    if "energy" in user_prefs:
+        closeness = 1 - abs(song["energy"] - user_prefs["energy"])
+        points = ENERGY_POINTS * closeness
+        score += points
+        reasons.append(f"energy {song['energy']:.2f} vs target {user_prefs['energy']:.2f} (+{points:.2f})")
+    if "likes_acoustic" in user_prefs:
+        a = song["acousticness"] if user_prefs["likes_acoustic"] else 1 - song["acousticness"]
+        points = ACOUSTIC_POINTS * a
+        score += points
+        reasons.append(f"{'acoustic' if user_prefs['likes_acoustic'] else 'produced/electronic'} sound (+{points:.2f})")
+    return round(score, 4), reasons
+
 
 def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
     """
     Functional implementation of the recommendation logic.
     Required by src/main.py
     """
-    # TODO: Implement scoring and ranking logic
-    # Expected return format: (song_dict, score, explanation)
-    return []
+    scored = []
+    for song in songs:
+        score, reasons = score_song(user_prefs, song)
+        scored.append((song, score, "; ".join(reasons)))
+    return sorted(scored, key=lambda item: item[1], reverse=True)[:k]
