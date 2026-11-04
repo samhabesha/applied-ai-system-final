@@ -11,7 +11,7 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-Replace this paragraph with your own summary of what your version does.
+**VibeFinder 1.0** is a content-based music recommender. It scores every song in a 20-song catalog against a listener's taste profile (favorite genre, mood, target energy and acoustic preference), ranks them, and explains each recommendation with the points it earned.
 
 ---
 
@@ -100,25 +100,25 @@ Profile: genre=pop, mood=happy, energy=0.8
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+**Profiles tested** (all defined in `src/main.py`, run with `python -m src.main`): High-Energy Pop, Chill Lofi, Deep Intense Rock, plus three adversarial profiles meant to trick the scoring: a *conflicted* listener (blues + sad but energy 0.9), a genre that is not in the catalog (k-pop), and an "acoustic EDM fan".
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+**Weight-shift experiment:** genre weight 2.0 -> 1.0 and energy weight 1.5 -> 3.0 (`EXPERIMENT_WEIGHTS` in `main.py`).
+- Default pop/happy: the top song stayed the same, but *Gym Hero* (pop but intense) dropped from #2 to #4 and two happy non-pop songs moved up. The list became more about *vibe* than the genre label.
+- Chill Lofi: barely changed. The lofi songs also have the right energy, so both rules agree.
+- Conflicted (blues/sad/energy 0.9): the only blues song lost its #1 spot to *Storm Runner* (rock, intense). With energy doubled, intensity beat genre and mood. The change made results **different, not more accurate**: it exposed that the profile itself is contradictory.
+
+Full outputs for every profile are in [model_card.md](model_card.md#7-evaluation).
 
 ---
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
+- Tiny catalog (20 songs), so a few songs (*Gym Hero*, *Storm Runner*) show up for many high-energy users.
+- Exact text matching: "indie pop" earns no genre credit for a pop fan, and an unknown genre like k-pop gets zero genre points for every song.
+- Genre is worth the most points, so the system can trap users in a "filter bubble" of one label.
+- It knows nothing about lyrics, language, artist history or what other people enjoy.
 
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
+See the [model card](model_card.md) for the full discussion.
 
 ---
 
