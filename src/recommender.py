@@ -82,38 +82,42 @@ def load_songs(csv_path: str) -> List[Dict]:
     return songs
 
 
-def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
+DEFAULT_WEIGHTS = {"genre": GENRE_POINTS, "mood": MOOD_POINTS, "energy": ENERGY_POINTS, "acoustic": ACOUSTIC_POINTS}
+
+
+def score_song(user_prefs: Dict, song: Dict, weights: Dict = None) -> Tuple[float, List[str]]:
     """
     Scores a single song against user preferences.
     Required by recommend_songs() and src/main.py
     """
+    w = {**DEFAULT_WEIGHTS, **(weights or {})}
     score, reasons = 0.0, []
     if song["genre"].lower() == str(user_prefs.get("genre", "")).lower():
-        score += GENRE_POINTS
-        reasons.append(f"genre match: {song['genre']} (+{GENRE_POINTS:.1f})")
+        score += w["genre"]
+        reasons.append(f"genre match: {song['genre']} (+{w['genre']:.1f})")
     if song["mood"].lower() == str(user_prefs.get("mood", "")).lower():
-        score += MOOD_POINTS
-        reasons.append(f"mood match: {song['mood']} (+{MOOD_POINTS:.1f})")
+        score += w["mood"]
+        reasons.append(f"mood match: {song['mood']} (+{w['mood']:.1f})")
     if "energy" in user_prefs:
         closeness = 1 - abs(song["energy"] - user_prefs["energy"])
-        points = ENERGY_POINTS * closeness
+        points = w["energy"] * closeness
         score += points
         reasons.append(f"energy {song['energy']:.2f} vs target {user_prefs['energy']:.2f} (+{points:.2f})")
     if "likes_acoustic" in user_prefs:
         a = song["acousticness"] if user_prefs["likes_acoustic"] else 1 - song["acousticness"]
-        points = ACOUSTIC_POINTS * a
+        points = w["acoustic"] * a
         score += points
         reasons.append(f"{'acoustic' if user_prefs['likes_acoustic'] else 'produced/electronic'} sound (+{points:.2f})")
     return round(score, 4), reasons
 
 
-def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5) -> List[Tuple[Dict, float, str]]:
+def recommend_songs(user_prefs: Dict, songs: List[Dict], k: int = 5, weights: Dict = None) -> List[Tuple[Dict, float, str]]:
     """
     Functional implementation of the recommendation logic.
     Required by src/main.py
     """
     scored = []
     for song in songs:
-        score, reasons = score_song(user_prefs, song)
+        score, reasons = score_song(user_prefs, song, weights)
         scored.append((song, score, "; ".join(reasons)))
     return sorted(scored, key=lambda item: item[1], reverse=True)[:k]
