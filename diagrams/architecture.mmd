@@ -1,0 +1,22 @@
+flowchart TD
+    U([Listener types a request]) --> G1{Input guardrails<br/>length · prompt injection · off-topic}
+    G1 -- blocked --> R1([Polite refusal + logged])
+    G1 -- ok --> RET[Retriever<br/>searches knowledge/*.md<br/>genres · moods · activities]
+    KB[(Custom knowledge base<br/>aliases, families, activity defaults)] --> RET
+    RET --> P[Parser<br/>Claude structured JSON<br/>or offline rules]
+    P --> V[validate_profile<br/>clamp energy, map aliases]
+    V --> S[VibeFinder 1.0 scorer<br/>genre · mood · energy · acoustic]
+    CAT[(data/songs.csv<br/>20 songs)] --> S
+    S --> RR[RAG re-rank<br/>related genre/mood credit<br/>'nothing too heavy' penalty]
+    KB --> RR
+    RR --> C[Confidence score 0-1]
+    C --> W[Writer<br/>Claude grounded answer<br/>or template]
+    RET -- notes --> W
+    W --> G2{Output guardrails<br/>only catalog titles · grounded · no secrets}
+    G2 -- fails --> T[Template answer fallback]
+    G2 -- ok --> OUT([Answer + confidence])
+    T --> OUT
+    OUT --> LOG[(logs/vibefinder.jsonl)]
+    R1 --> LOG
+    LOG -. reviewed by .-> H[Human: eval.py + pytest<br/>+ reading logs]
+    H -. tunes .-> KB
