@@ -1,3 +1,2 @@
-pandas
+﻿anthropic>=1.0
 pytest
-streamlit
