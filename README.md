@@ -171,7 +171,7 @@ VibeFinder 1.0 understanding (exact catalog genre and mood labels only); "with n
 
 ## Reflection
 
-_(Short reflection: to be written by Samson. See model_card.md §9 for the full prompts.)_
+The main lesson: an AI feature is only as trustworthy as the checks around it. The eval harness caught two bugs that looked fine in a quick demo (an alias hijacking a genre, and two rules fighting each other), and the before/after test showed that retrieval improved understanding (2/8 → 8/8), not just wording. I built this with Claude Code as my pair programmer and treated its code the same way I treat the model in the app: useful, but verified before it's trusted. The full reflection and AI-collaboration notes are in [model_card.md](model_card.md#9-reflection-and-ai-collaboration).
 
 ## Files
 

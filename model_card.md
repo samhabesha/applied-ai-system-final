@@ -42,11 +42,14 @@
 - **Residual risk:** the regex filters can be dodged with creative wording. The impact is low, since the worst case is an odd music answer, and it's limited because Claude never ranks songs and every answer is checked against the catalog.
 
 ## 8. What surprised me in testing
-_(Samson: write 3–5 sentences in your own words. Ideas from the eval history: "dance" as an EDM alias hijacking "k-pop to dance to"; "workout but nothing too heavy" first scoring 0.44 because two rules fought each other; the baseline blocking "chillhop for coding" as off-topic because, without the notes, it didn't recognize any music words.)_
+The eval harness found problems that a few hand-typed tests would have missed. "Happy k-pop to dance to" returned EDM first, because the knowledge base listed "dance" as an EDM alias, so one word overrode the genre the listener actually named. "Workout music but nothing too heavy" first scored only 0.44: the workout note asked for *intense* songs while the heavy-music rule punished intense songs, so two rules were fighting each other. The before/after comparison surprised me too. Without the knowledge notes, the system didn't just give worse answers to "chillhop for coding", it refused the request as off-topic, because it didn't recognize a single word. Retrieval affected the guardrails, not only the recommendations.
 
 ## 9. Reflection and AI collaboration
-_(Samson: in your own words.)_
-- **How I used AI while building this:**
-- **One AI suggestion I accepted, and why:**
-- **One AI suggestion I rejected or changed, and why:**
-- **What this project says about me as an AI engineer (portfolio paragraph):**
+
+**How I used AI.** I built this with Claude Code as my pair programmer. It drafted most of the code (retriever, guardrails, pipeline, tests and eval harness) from my plan: upgrade VibeFinder 1.0 with RAG, guardrails, logging and a confidence score. My job was to decide what the system should and shouldn't do, run the tests and the eval, read the results, and decide what to fix. The project also uses Claude inside the app, to parse requests and write answers.
+
+**A suggestion I accepted.** Treat the LLM as untrusted: it may parse the request and write the answer, but it never ranks songs, and its JSON is validated before use. I accepted it because it keeps every recommendation explainable with the original scorer, and because a hallucinated song can't be ranked when the model doesn't rank anything.
+
+**A suggestion I changed.** The first knowledge base listed "dance" as an EDM alias, and the eval showed it hijacking "k-pop to dance to". It was removed, because "dance" describes an activity, not a genre. The first workout rule also conflicted with "nothing too heavy", so the profile now switches an intense mood to *confident* when the listener asks to avoid heavy music. In both cases the AI's first version looked reasonable, and only measuring it showed the problem.
+
+**What this project says about me as an AI engineer.** I build AI features the way production teams need them: the model gets a narrow job, everything around it is tested, and the system says so when it isn't sure. In VibeFinder 2.0 I added retrieval over my own knowledge base to a transparent scorer, used Claude with schema-validated output, put guardrails on both input and output, and proved the improvement with numbers (right genre family 2/8 → 8/8) instead of claims. My work building Copilot Studio agents shaped this: I care less about clever prompts and more about what happens when the model is wrong.
